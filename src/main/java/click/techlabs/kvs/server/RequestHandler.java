@@ -1,6 +1,8 @@
-package click.techlabs.kvs;
+package click.techlabs.kvs.server;
 
 
+import click.techlabs.kvs.db.DB;
+import click.techlabs.kvs.db.DBException;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -9,14 +11,15 @@ import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 public class RequestHandler extends ChannelInboundHandlerAdapter {
-    private final static Map<String, String> store = new ConcurrentHashMap<>();
     private final Logger LOGGER = LoggerFactory.getLogger(RequestHandler.class);
+    private DB db;
 
-    public Response handle(Request r) {
+    public RequestHandler(DB db) {
+        this.db = db;
+    }
+
+    public Response handle(Request r) throws DBException {
         LOGGER.info("Processing a new request");
         String content = null;
         if (r.isValid()) {
@@ -24,11 +27,11 @@ public class RequestHandler extends ChannelInboundHandlerAdapter {
             switch (r.getCmd()) {
                 case SET:
                     LOGGER.info("Processing request command {} with key {} and value {} ", r.getCmd(), r.getKey(), r.getValue());
-                    content = store.put(r.getKey(), r.getValue());
+                    db.set(r.getKey(), r.getValue());
                     break;
                 case GET:
                     LOGGER.info("Processing request command {} with key {} ", r.getCmd(), r.getKey());
-                    content = store.get(r.getKey());
+                    content = db.get(r.getKey()).orElse(null);
             }
         } else {
             LOGGER.error("Bad Request {}", r);

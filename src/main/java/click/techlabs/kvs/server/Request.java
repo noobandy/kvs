@@ -1,4 +1,4 @@
-package click.techlabs.kvs;
+package click.techlabs.kvs.server;
 
 public class Request {
     private Commands cmd;

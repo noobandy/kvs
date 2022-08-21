@@ -1,4 +1,4 @@
-package click.techlabs.kvs;
+package click.techlabs.kvs.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

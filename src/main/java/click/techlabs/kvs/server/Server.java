@@ -1,6 +1,8 @@
-package click.techlabs.kvs;
+package click.techlabs.kvs.server;
 
 
+import click.techlabs.kvs.db.DB;
+import click.techlabs.kvs.db.DBException;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -8,6 +10,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 public class Server {
 
@@ -17,13 +21,16 @@ public class Server {
     private NioEventLoopGroup bossGroup;
     private NioEventLoopGroup workerGroup;
     private boolean running = false;
+    private DB db;
 
     public Server(int port) {
         this.port = port;
     }
 
-    public void start(ChannelFutureListener onStart) {
+    public void start(ChannelFutureListener onStart) throws DBException {
         running = true;
+        //TODO: Externalize
+        db = new DB("file:/Users/name/Downloads/kvs/src/main/resources/kvs-db");
         ServerBootstrap sb = new ServerBootstrap();
         bossGroup = new NioEventLoopGroup();
         workerGroup = new NioEventLoopGroup();
@@ -33,7 +40,7 @@ public class Server {
 
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
-                        ch.pipeline().addLast(new RequestDecoder(), new ResponseEncoder(), new RequestHandler());
+                        ch.pipeline().addLast(new RequestDecoder(), new ResponseEncoder(), new RequestHandler(db));
                     }
                 })
                 .option(ChannelOption.SO_BACKLOG, 10)
@@ -44,9 +51,10 @@ public class Server {
 
     }
 
-    public void stop(final ChannelFutureListener onStop) {
+    public void stop(final ChannelFutureListener onStop) throws IOException {
         if (running) {
             running = false;
+            db.close();
             channel.close().addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
